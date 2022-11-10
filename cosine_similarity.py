@@ -4,7 +4,7 @@ from nltk.tokenize import word_tokenize
 # from nltk.stem import PorterStemmer
 # from nltk.corpus import stopwords
 
-from sample_data import response, query, key_fields,field_score
+from sample_data import response, query, key_fields,field_score, max_size
 
 
 def calculate_cosine_similarity(X,Y):
@@ -40,7 +40,7 @@ def get_tokens(document):
   for word in document:
     token = word_tokenize(word)
     text_tokens.extend(token)
-  return list(set(text_tokens))
+  return list(text_tokens)
 
 def get_response_meta_data(response):
   response_meta_data = []
@@ -52,18 +52,25 @@ def get_response_meta_data(response):
       if not data:
         continue
       if field not in ["tags", "keywords"]:
-        data = list(set(data.split(" ")))
+        data = list(data.split(" "))
       tokens = get_tokens(data)
       current_meta_data[field] = tokens
     response_meta_data.append(current_meta_data)
   return response_meta_data
 
+def get_intersecting_terms(document_terms, query_terms):
+  result_terms = set()
+  for doc_term in document_terms:
+    for q_term in query_terms:
+      if doc_term.find(q_term) > -1:
+        result_terms.add(doc_term)
+  return result_terms
 
 def get_results(query, response):
   results_score_map = {}
   response_meta_data = get_response_meta_data(response)
   print(f"Response meta data = {response_meta_data}")
-  query_meta_data = get_tokens(query)
+  query_meta_data = get_tokens(query.split(" "))
   print(f"Query meta data = {query_meta_data}")
 
   query_score_data = {}
@@ -78,7 +85,7 @@ def get_results(query, response):
     for field in key_fields:
       if field not in meta_data:
         continue
-      current_matched_fields = set(meta_data[field]).intersection(set(query_meta_data))
+      current_matched_fields = get_intersecting_terms(set(meta_data[field]),(set(query_meta_data)))
       for value in current_matched_fields:
         matched_fields[value] += field_score[field]
       print(f"{field} = {current_matched_fields}")
@@ -86,11 +93,11 @@ def get_results(query, response):
     score = calculate_cosine_similarity( query_score_data, matched_fields)
     print(f"Cosine similarity(query,doc) = {score}")
     results_score_map[meta_data["id"]] = score
-  results_score_map = {k: v for k, v in sorted(results_score_map.items(), key=lambda item: item[1], reverse=True)}
+  results_score_map = {k: v for k, v in sorted(results_score_map.items(), key=lambda item: item[1], reverse=True)[:max_size]}
   return results_score_map
 
-query = query.split(" ")
-print(get_results(query, response))
+# query = query.split(" ")
+# print(get_results(query, response))
 
 # def get_stem_map(text_tokens):
 #   ps = PorterStemmer()

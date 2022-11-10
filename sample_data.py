@@ -1,11 +1,13 @@
 query = "shell"
-key_fields = ["name", "description", "keywords", "tags", "presentableFormat"]
+max_size = 10
+key_fields = ["name", "description", "keywords", "tags", "presentableFormat", "language"]
 field_score = {
-    "name": 0.5,
+    "name": 1,
     "description": 0.5,
     "keywords": 0.5,
     "tags": 1,
-    "presentableFormat": 0.3
+    "presentableFormat": 0.25,
+    "language": 2
 }
 response = [
     {
